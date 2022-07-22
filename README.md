@@ -7,7 +7,7 @@
 ---
 
 This repository provides a script for training a 2D U-Net of liver segmentation in CT volumes.  
-It is designed to be run on the dl1.24xlarge, p3dn.24xlarge and p4d.24xlarge EC2 instances on AWS.  
+It is designed to run on the dl1.24xlarge, p3dn.24xlarge and p4d.24xlarge EC2 instances on AWS.  
 Monitoring metrics are logged to evaluate the performance of Gaudi cards and Nvidia GPUs.
 
 ## Setup
