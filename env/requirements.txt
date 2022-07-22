@@ -1,0 +1,11 @@
+tensorflow==2.8
+numpy
+pandas
+matplotlib
+SimpleITK
+boto3
+tqdm
+ipywidgets
+itkwidgets
+horovod[tensorflow]
+protobuf==3.20
