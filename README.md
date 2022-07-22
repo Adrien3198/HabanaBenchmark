@@ -18,7 +18,7 @@ Monitoring metrics are logged to evaluate the performance of Gaudi cards and Nvi
 
 ```bash
 cd
-git clone <link> LiverSeg
+git clone https://github.com/Adrien3198/HabanaBenchmark.git LiverSeg
 ```
 
 ### Environment
