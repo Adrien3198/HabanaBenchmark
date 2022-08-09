@@ -59,7 +59,14 @@ cd ~/LiverSeg/scripts
 Run the preprocessing and train-test splitting script:
 
 ```bash
-bash preprocessing_train_test.sh
+export DATA_DIR=$HOME/DATA
+export SCRIPTS_DIR=$HOME/LiverSeg/scrips
+export SRC_DATA_DIR=$DATA_DIR/original_data
+export PREPROCESSED_DATA_DIR=$DATA_DIR/preprocessed_data
+export TRAIN_DIR=$DATA_DIR/train_test_data
+
+$PYTHON $SCRIPTS_DIR/preprocess.py -i $SRC_DATA_DIR -t $PREPROCESSED_DATA_DIR -f
+$PYTHON $SCRIPTS_DIR/create_train_test_dir.py -i $PREPROCESSED_DATA_DIR -t $TRAIN_DIR -f
 ```
 
 ## Training
@@ -84,8 +91,7 @@ horovodrun -np 8 $PYTHON ~/LiverSeg/scripts/train.py -i ~/DATA/training_data -in
 - Running on 8 Gaudi cards on dl1 with batch size 32 and 100 epochs:
 
 ```bash
-horovodrun -np 8 $PYTHON ~/LiverSeg/scripts/train.py -i ~/DATA/training_data -instance dl1 -bs 32 -e 100 -l tensorboard_logs --gaudi
-
+horovodrun -np 8 $PYTHON ~/LiverSeg/scripts/train.py -i ~/DATA/training_data -instance dl1 -bs 32 -e 100 -l tensorboard_logs
 ```
 
 To enable mixed_precision, add the `--mixed_precision` flag in the command for Gaudi and GPUs
@@ -96,7 +102,6 @@ Example:
 
 ```bash
 horovodrun -np 8 $PYTHON ~/LiverSeg/scripts/train.py -i ~/DATA/training_data -instance dl1 -bs 32 -e 100 -l tensorboard_logs --mixed_precision
-
 ```
 
 During training, some performance logs are produced in the directory `performance_logs` where there are specific directories for each session. each node produces its own logs in a file of its own.  

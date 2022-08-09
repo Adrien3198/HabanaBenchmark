@@ -16,7 +16,6 @@ project_path = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir))
 python_module_path = os.path.join(project_path, "python")
 sys.path.append(os.path.abspath(python_module_path))
 
-
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
@@ -64,7 +63,11 @@ args = parser.parse_args()
 
 use_gaudi = args.instance == "dl1"
 
-with open(os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, "bucket_config.json")), "r") as f:
+use_gaudi = False
+with open(
+    os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, "bucket_config.json")),
+    "r",
+) as f:
     bucketconfig = json.load(f)
     all(bucketconfig[k] != "" for k in ["service_name", "region_name", "bucketname"])
 
@@ -87,7 +90,8 @@ except Exception:
 
 import tensorflow as tf
 from livseg.data_management.dataset_handler import DatasetHandler
-from livseg.data_management.generator import DataGenerator, DatasetPartitioner
+from livseg.data_management.generator import DatasetPartitioner
+from livseg.data_management.loader import X_COL, Y_COL
 from livseg.data_management.s3utils import S3UpLoader
 from livseg.model.callbacks import BenchmarkClbck
 from livseg.model.metrics import dice_coef
@@ -98,9 +102,7 @@ from tensorflow.keras.models import save_model
 from tensorflow.keras.optimizers import Adam
 
 if args.mixed_precision:
-    tf.keras.mixed_precision.set_global_policy(
-        f'mixed_{"b" if use_gaudi else ""}float16'
-    )
+    tf.keras.mixed_precision.set_global_policy("mixed_bfloat16")
 
 if not use_gaudi:
     gpus = tf.config.experimental.list_physical_devices("GPU")
@@ -143,23 +145,72 @@ logging.basicConfig(
 )
 
 logging.info(f"Starting {session}")
-
+logging.info("0")
 directory_handler = DatasetHandler(args.input_dir)
 full_df_train, full_df_test = directory_handler.get_train_test_split_from_ids()
-
+logging.info("1")
 train_splitter = DatasetPartitioner(full_df_train, hvd_size)
 test_splitter = DatasetPartitioner(full_df_test, hvd_size)
 
+logging.info("2")
 df_train = train_splitter.get_partition(hvd_rank)
 df_test = test_splitter.get_partition(hvd_rank)
 
 del full_df_train
 del full_df_test
 
-train_gen = DataGenerator(df_train, batch_size=batch_size, use_augmentation=True)
-test_gen = DataGenerator(df_test, batch_size=batch_size)
 
-print(train_gen.shapes)
+def process_path(path):
+    logging.info(path)
+    x_path = path[0]
+    y_path = path[1]
+    logging.info("XP", x_path)
+    logging.info("YP", y_path)
+    X = np.load(x_path)
+    y = np.load(y_path)
+    return X, y
+
+
+logging.info("3")
+train_file_list = list(zip(df_train[X_COL].values, df_train[Y_COL].values))
+test_file_list = list(zip(df_test[X_COL].values, df_test[Y_COL].values))
+
+logging.info("4")
+train_ds = tf.data.Dataset.from_tensor_slices((df_train[X_COL].tolist(), df_train[Y_COL].tolist()))
+test_ds = tf.data.Dataset.from_tensor_slices((df_test[X_COL].tolist(), df_test[Y_COL].tolist()))
+
+
+def map_func(feature_path, label_path):
+    feature = np.load(feature_path)
+    label = np.load(label_path)
+    return feature, label
+
+
+AUTOTUNE = tf.data.AUTOTUNE
+logging.info("Load train set")
+train_ds = train_ds.map(
+    lambda item1, item2: tf.numpy_function(map_func, [item1, item2], [tf.float32, tf.uint16]),
+    num_parallel_calls=AUTOTUNE,
+)
+# .map(process_path, num_parallel_calls=AUTOTUNE)
+logging.info("Load test set")
+test_ds = test_ds.map(
+    lambda item1, item2: tf.numpy_function(map_func, [item1, item2], [tf.float32, tf.uint16]),
+    num_parallel_calls=AUTOTUNE,
+)  # .map(process_path, num_parallel_calls=AUTOTUNE)
+
+
+def configure_for_performance(ds):
+    ds = ds.cache()
+    ds = ds.shuffle(buffer_size=1000)
+    ds = ds.batch(batch_size)
+    ds = ds.prefetch(buffer_size=AUTOTUNE)
+    return ds
+
+
+train_ds = configure_for_performance(train_ds)
+test_ds = configure_for_performance(test_ds)
+
 
 model = unet2D(input_shape=(512, 512, 1))
 
@@ -204,8 +255,8 @@ if hvd_rank == 0:
     )
 
 history = model.fit(
-    train_gen,
-    validation_data=test_gen,
+    train_ds,
+    validation_data=test_ds,
     epochs=epochs,
     callbacks=callbacks,
     verbose=int(hvd_rank == 0),

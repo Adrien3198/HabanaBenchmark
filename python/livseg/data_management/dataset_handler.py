@@ -1,4 +1,5 @@
 """Contains dataset related class"""
+import logging
 import os
 import re
 import shutil
@@ -6,14 +7,9 @@ from typing import Iterable, Tuple, Union
 
 import numpy as np
 from livseg.data_management.loader import (
-    X_COL,
-    Y_COL,
-    load_and_merge_ct_segmentations_paths,
-    read_ct_array,
-    read_segmentation_array,
-    merge_ct_segmentations_paths,
-    parse_filename,
-)
+    X_COL, Y_COL, load_and_merge_ct_segmentations_paths,
+    merge_ct_segmentations_paths, parse_filename, read_ct_array,
+    read_segmentation_array)
 from pandas import DataFrame
 from tqdm import tqdm
 
@@ -30,6 +26,7 @@ class DatasetHandler:
     def __init__(self, directory: Union[str, os.PathLike]) -> None:
         self.directory = directory
         self.df = self.get_data_paths() if os.path.exists(directory) else None
+
 
     def get_data_paths(self) -> DataFrame:
         """Stores data paths in a Dataframe
@@ -64,10 +61,14 @@ class DatasetHandler:
         Tuple[DataFrame, DataFrame]
             Dataframe of data paths of train and test sets
         """
-
+        logging.info(f'get_train_test_split_from_ids')
         if self.df is None:
             raise ValueError("df attribute is not initialized")
-        return self.df.loc[train_indexes], self.df.loc[test_indexes]
+        #df1, df2 = self.df.loc[TRAIN_NUMS], self.df.loc[TEST_NUMS]
+        df = self.df.reset_index()
+        df1 = df[df["num"].map(lambda x: x in TRAIN_NUMS)]
+        df2 = df[df["num"].map(lambda x: x in TEST_NUMS)]
+        return df1, df2
 
     def get_random_train_test_split(
         self, train_size=0.75
