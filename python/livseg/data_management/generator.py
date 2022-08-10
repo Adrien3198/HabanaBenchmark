@@ -49,8 +49,8 @@ class DataGenerator(Sequence):
         super().__init__()
         self.shuffle = shuffle
         self.batch_size = batch_size
-        self.df = df.reset_index()
-        self.indexes = arange(len(self.df))
+        self.df = df
+        self.indexes = df.index.values
         self.use_augmentation = use_augmentation
         self.on_epoch_end()
 

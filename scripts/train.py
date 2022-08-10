@@ -102,7 +102,7 @@ from tensorflow.keras.models import save_model
 from tensorflow.keras.optimizers import Adam
 
 if args.mixed_precision:
-    tf.keras.mixed_precision.set_global_policy("mixed_bfloat16")
+    tf.keras.mixed_precision.set_global_policy(f'mixed_{"b" if use_gaudi else ""}float16')
 
 if not use_gaudi:
     gpus = tf.config.experimental.list_physical_devices("GPU")
@@ -148,36 +148,28 @@ logging.info(f"Starting {session}")
 logging.info("0")
 directory_handler = DatasetHandler(args.input_dir)
 full_df_train, full_df_test = directory_handler.get_train_test_split_from_ids()
+
 logging.info("1")
 train_splitter = DatasetPartitioner(full_df_train, hvd_size)
 test_splitter = DatasetPartitioner(full_df_test, hvd_size)
+
+del full_df_train
+del full_df_test
 
 logging.info("2")
 df_train = train_splitter.get_partition(hvd_rank)
 df_test = test_splitter.get_partition(hvd_rank)
 
-del full_df_train
-del full_df_test
-
-
-def process_path(path):
-    logging.info(path)
-    x_path = path[0]
-    y_path = path[1]
-    logging.info("XP", x_path)
-    logging.info("YP", y_path)
-    X = np.load(x_path)
-    y = np.load(y_path)
-    return X, y
-
-
 logging.info("3")
-train_file_list = list(zip(df_train[X_COL].values, df_train[Y_COL].values))
-test_file_list = list(zip(df_test[X_COL].values, df_test[Y_COL].values))
 
-logging.info("4")
-train_ds = tf.data.Dataset.from_tensor_slices((df_train[X_COL].tolist(), df_train[Y_COL].tolist()))
-test_ds = tf.data.Dataset.from_tensor_slices((df_test[X_COL].tolist(), df_test[Y_COL].tolist()))
+train_ds = tf.data.Dataset.from_tensor_slices(
+    (df_train[X_COL].tolist(), df_train[Y_COL].tolist())
+)
+test_ds = tf.data.Dataset.from_tensor_slices(
+    (df_test[X_COL].tolist(), df_test[Y_COL].tolist())
+)
+logging.info(f"train element :{train_ds.take(1).as_numpy_iterator().next()}")
+logging.info(f"test element :{test_ds.take(1).as_numpy_iterator().next()}")
 
 
 def map_func(feature_path, label_path):
@@ -189,15 +181,24 @@ def map_func(feature_path, label_path):
 AUTOTUNE = tf.data.AUTOTUNE
 logging.info("Load train set")
 train_ds = train_ds.map(
-    lambda item1, item2: tf.numpy_function(map_func, [item1, item2], [tf.float32, tf.uint16]),
+    lambda item1, item2: tf.numpy_function(
+        map_func, [item1, item2], [tf.float32, tf.uint16]
+    ),
     num_parallel_calls=AUTOTUNE,
 )
-# .map(process_path, num_parallel_calls=AUTOTUNE)
+# .map(map_func, num_parallel_calls=AUTOTUNE)
+
 logging.info("Load test set")
 test_ds = test_ds.map(
-    lambda item1, item2: tf.numpy_function(map_func, [item1, item2], [tf.float32, tf.uint16]),
+    lambda item1, item2: tf.numpy_function(
+        map_func, [item1, item2], [tf.float32, tf.uint16]
+    ),
     num_parallel_calls=AUTOTUNE,
-)  # .map(process_path, num_parallel_calls=AUTOTUNE)
+)
+# .map(map_func, num_parallel_calls=AUTOTUNE)
+
+logging.info(f"train size before config :{train_ds.take(1).as_numpy_iterator().next()}")
+logging.info(f"test size before config :{test_ds.take(1).as_numpy_iterator().next()}")
 
 
 def configure_for_performance(ds):
@@ -210,6 +211,12 @@ def configure_for_performance(ds):
 
 train_ds = configure_for_performance(train_ds)
 test_ds = configure_for_performance(test_ds)
+
+logging.info(f"train size after config :{train_ds.take(1).as_numpy_iterator().next()}")
+logging.info(f"test size after config :{test_ds.take(1).as_numpy_iterator().next()}")
+
+"""train_ds = DataGenerator(df_train, batch_size=batch_size, use_augmentation=True)
+test_ds = DataGenerator(df_test, batch_size=batch_size)"""
 
 
 model = unet2D(input_shape=(512, 512, 1))

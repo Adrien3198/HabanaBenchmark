@@ -88,9 +88,9 @@ def merge_ct_segmentations_paths(df: pd.DataFrame) -> pd.DataFrame:
     return pd.merge(
         left=df_volumes,
         right=df_segmentations,
-        on="num",
+        on=["num", "idx"],
         suffixes=[__X_SUFFIX, __Y_SUFFIX],
-    ).set_index("num")
+    )
 
 
 def load_and_merge_ct_segmentations_paths(

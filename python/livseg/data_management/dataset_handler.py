@@ -61,14 +61,10 @@ class DatasetHandler:
         Tuple[DataFrame, DataFrame]
             Dataframe of data paths of train and test sets
         """
-        logging.info(f'get_train_test_split_from_ids')
         if self.df is None:
             raise ValueError("df attribute is not initialized")
-        #df1, df2 = self.df.loc[TRAIN_NUMS], self.df.loc[TEST_NUMS]
-        df = self.df.reset_index()
-        df1 = df[df["num"].map(lambda x: x in TRAIN_NUMS)]
-        df2 = df[df["num"].map(lambda x: x in TEST_NUMS)]
-        return df1, df2
+
+        return self.df[self.df["num"].isin(TRAIN_NUMS)].copy(), self.df[self.df["num"].isin(TEST_NUMS)].copy()
 
     def get_random_train_test_split(
         self, train_size=0.75
@@ -88,7 +84,7 @@ class DatasetHandler:
         limit = int(len(self.df) * train_size)
         df = self.df.sample(frac=1, random_state=42)
         train_indexes, test_indexes = df.index[:limit], df.index[limit:]
-        return df.loc[train_indexes], df.loc[test_indexes]
+        return df.loc[train_indexes].copy(), df.loc[test_indexes].copy()
 
     @staticmethod
     def create_directory(
