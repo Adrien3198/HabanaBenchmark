@@ -5,7 +5,5 @@ matplotlib
 SimpleITK
 boto3
 tqdm
-ipywidgets
-itkwidgets
 horovod[tensorflow]
 protobuf==3.20

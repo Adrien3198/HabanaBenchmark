@@ -69,7 +69,7 @@ def load_data_paths_to_df(dataset_dir: Union[str, os.PathLike]) -> pd.DataFrame:
     return df
 
 
-def merge_ct_segmentations_paths(df: pd.DataFrame) -> pd.DataFrame:
+def merge_ct_segmentations_paths(df: pd.DataFrame, on="num") -> pd.DataFrame:
     """From Dataframe of volume data path, create a Dataframe with pairs of ct volume path and segmentation volume path
 
     Parameters
@@ -88,7 +88,7 @@ def merge_ct_segmentations_paths(df: pd.DataFrame) -> pd.DataFrame:
     return pd.merge(
         left=df_volumes,
         right=df_segmentations,
-        on=["num", "idx"],
+        on=on,
         suffixes=[__X_SUFFIX, __Y_SUFFIX],
     )
 

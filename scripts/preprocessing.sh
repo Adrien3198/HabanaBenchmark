@@ -1,5 +1,5 @@
 export DATA_DIR=$HOME/DATA
-export SCRIPTS_DIR=$HOME/LiverSeg/scrips
+export SCRIPTS_DIR=$HOME/LiverSeg/scripts
 export SRC_DATA_DIR=$DATA_DIR/original_data
 export PREPROCESSED_DATA_DIR=$DATA_DIR/preprocessed_data
 export TRAIN_DIR=$DATA_DIR/train_test_data

@@ -3,6 +3,8 @@ import os
 
 import boto3 as bt
 from tqdm import tqdm
+
+
 class S3UpLoader:
     def __init__(
         self,
@@ -24,9 +26,7 @@ class S3UpLoader:
         self.weights_dir = weights_dir
         self.session = session
         bucketname = bucketconfig.pop("bucketname")
-        self.bucket = bt.resource(
-                **bucketconfig
-            ).Bucket(bucketname)
+        self.bucket = bt.resource(**bucketconfig).Bucket(bucketname)
 
     def upload_history(self):
         filename = f"{self.session}.json"
@@ -48,9 +48,9 @@ class S3UpLoader:
     def upload_logs(self):
         path = os.path.join(self.log_dir, self.session)
         for file in os.listdir(path):
-            self.bucket.Object(f"{self.instance}/logs/{self.session}/{file}").upload_file(
-                os.path.join(path, file)
-            )
+            self.bucket.Object(
+                f"{self.instance}/logs/{self.session}/{file}"
+            ).upload_file(os.path.join(path, file))
 
     def upload_weights(self):
         filename = f"{self.session}.h5"
@@ -60,9 +60,7 @@ class S3UpLoader:
 
 def download_data(bucketconfig, prefix="DATA/original_data/", target=""):
     bucketname = bucketconfig.pop("bucketname")
-    bucket = bt.resource(
-                **bucketconfig
-            ).Bucket(bucketname)
+    bucket = bt.resource(**bucketconfig).Bucket(bucketname)
     if not os.path.exists(target):
         os.makedirs(target)
     for my_bucket_object in tqdm(list(bucket.objects.filter(Prefix=prefix))):

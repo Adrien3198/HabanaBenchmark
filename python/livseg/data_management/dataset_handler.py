@@ -7,14 +7,152 @@ from typing import Iterable, Tuple, Union
 
 import numpy as np
 from livseg.data_management.loader import (
-    X_COL, Y_COL, load_and_merge_ct_segmentations_paths,
-    merge_ct_segmentations_paths, parse_filename, read_ct_array,
-    read_segmentation_array)
+    X_COL,
+    Y_COL,
+    load_and_merge_ct_segmentations_paths,
+    merge_ct_segmentations_paths,
+    parse_filename,
+    read_ct_array,
+    read_segmentation_array,
+)
 from pandas import DataFrame
 from tqdm import tqdm
 
-TRAIN_NUMS = [123,39,70,47,59,120,105,91,84,29,62,65,86,18,19,1,50,24,81,64,41,97,56,122,69,12,63,119,6,21,93,73,58,8,15,75,46,57,36,26,14,17,94,43,60,79,67,9,33,128,0,74,99,32,125,28,72,22,38,103,53,118,31,114,85,129,107,10,109,3,115,37,121,4,90,2,124,117,30,16,83,89,104,110,49,77,80,130,55,13,45,106,66,44,25,40,11,113]
-TEST_NUMS = [54,88,95,111,127,42,27,100,78,48,102,23,92,98,51,52,82,116,5,61,71,68,34,20,96,87,108,126,112,76,35,101,7]
+TRAIN_NUMS = [
+    123,
+    39,
+    70,
+    47,
+    59,
+    120,
+    105,
+    91,
+    84,
+    29,
+    62,
+    65,
+    86,
+    18,
+    19,
+    1,
+    50,
+    24,
+    81,
+    64,
+    41,
+    97,
+    56,
+    122,
+    69,
+    12,
+    63,
+    119,
+    6,
+    21,
+    93,
+    73,
+    58,
+    8,
+    15,
+    75,
+    46,
+    57,
+    36,
+    26,
+    14,
+    17,
+    94,
+    43,
+    60,
+    79,
+    67,
+    9,
+    33,
+    128,
+    0,
+    74,
+    99,
+    32,
+    125,
+    28,
+    72,
+    22,
+    38,
+    103,
+    53,
+    118,
+    31,
+    114,
+    85,
+    129,
+    107,
+    10,
+    109,
+    3,
+    115,
+    37,
+    121,
+    4,
+    90,
+    2,
+    124,
+    117,
+    30,
+    16,
+    83,
+    89,
+    104,
+    110,
+    49,
+    77,
+    80,
+    130,
+    55,
+    13,
+    45,
+    106,
+    66,
+    44,
+    25,
+    40,
+    11,
+    113,
+]
+TEST_NUMS = [
+    54,
+    88,
+    95,
+    111,
+    127,
+    42,
+    27,
+    100,
+    78,
+    48,
+    102,
+    23,
+    92,
+    98,
+    51,
+    52,
+    82,
+    116,
+    5,
+    61,
+    71,
+    68,
+    34,
+    20,
+    96,
+    87,
+    108,
+    126,
+    112,
+    76,
+    35,
+    101,
+    7,
+]
 
 
 class DatasetHandler:
@@ -26,7 +164,6 @@ class DatasetHandler:
     def __init__(self, directory: Union[str, os.PathLike]) -> None:
         self.directory = directory
         self.df = self.get_data_paths() if os.path.exists(directory) else None
-
 
     def get_data_paths(self) -> DataFrame:
         """Stores data paths in a Dataframe
@@ -42,7 +179,7 @@ class DatasetHandler:
                 for filename in tqdm(os.listdir(self.directory))
             ]
         )
-        return merge_ct_segmentations_paths(df)
+        return merge_ct_segmentations_paths(df, on=["num", "idx"])
 
     def get_train_test_split_from_ids(
         self, train_indexes: list = TRAIN_NUMS, test_indexes: list = TEST_NUMS
@@ -64,7 +201,10 @@ class DatasetHandler:
         if self.df is None:
             raise ValueError("df attribute is not initialized")
 
-        return self.df[self.df["num"].isin(TRAIN_NUMS)].copy(), self.df[self.df["num"].isin(TEST_NUMS)].copy()
+        return (
+            self.df[self.df["num"].isin(TRAIN_NUMS)].copy(),
+            self.df[self.df["num"].isin(TEST_NUMS)].copy(),
+        )
 
     def get_random_train_test_split(
         self, train_size=0.75

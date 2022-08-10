@@ -15,7 +15,10 @@ parser.add_argument("--prefix", dest="prefix", type=str)
 
 args = parser.parse_args()
 
-with open(os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, "bucket_config.json")), "r") as f:
+with open(
+    os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, "bucket_config.json")),
+    "r",
+) as f:
     bucketconfig = json.load(f)
     all(bucketconfig[k] != "" for k in ["service_name", "region_name", "bucketname"])
 

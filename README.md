@@ -10,6 +10,9 @@ This repository provides a script for training a 2D U-Net of liver segmentation 
 It is designed to run on the dl1.24xlarge, p3dn.24xlarge and p4d.24xlarge EC2 instances on AWS.  
 Monitoring metrics are logged to evaluate the performance of Gaudi cards and Nvidia GPUs.
 
+You con find more information and resources at [Habana for developers website](https://developer.habana.ai/)
+
+
 ## Setup
 
 ---
@@ -17,7 +20,7 @@ Monitoring metrics are logged to evaluate the performance of Gaudi cards and Nvi
 ### Clone the project repository
 
 ```bash
-cd
+cd ~
 git clone https://github.com/Adrien3198/HabanaBenchmark.git LiverSeg
 ```
 
@@ -27,11 +30,21 @@ git clone https://github.com/Adrien3198/HabanaBenchmark.git LiverSeg
 - Python 3.8
 - Tensorflow 2.8
 
-To launch a training on Habana dl1.24xlarge EC2 instance, use the **Deep Learning AMI Habana TensorFlow 2.8.0 SynapseAI 1.3.0 (Ubuntu 20.04)**
+To launch a training on Habana dl1.24xlarge EC2 instance, use the **Deep Learning AMI Habana TensorFlow 2.8.0 SynapseAI 1.4.0 (Ubuntu 20.04)**.
 
-For Nvidia GPUs based EC2 instances, use the **Deep Learning AMI GPU TensorFlow 2.8.0 (Ubuntu 20.04)**
+(more information at [Habana installation guide](https://docs.habana.ai/en/latest/Installation_Guide/index.html))
 
-Set PYTHON environment variable to `/usr/bin/python3.8`
+For Nvidia GPUs based EC2 instances, use the **Deep Learning AMI GPU TensorFlow 2.8.0 (Ubuntu 20.04)**.
+
+Set PYTHON environment variable to `/usr/bin/python3.8` with adding the following line at the end of the `~/.bashrc` file:  
+```txt
+PYTHON=/usr/bin/python3.8
+```
+And then run :  
+```bash
+source ~/.bashrc
+```
+ 
 
 Then, install required package with the setup script :
 
@@ -46,9 +59,16 @@ Download the dataset on Kaggle at:
 - [Liver Tumor Segmentation pt1](https://www.kaggle.com/datasets/andrewmvd/liver-tumor-segmentation)
 - [Liver Tumor Segmentation pt2](https://www.kaggle.com/datasets/andrewmvd/liver-tumor-segmentation-part-2)
 
-Unzip all files in a single directory: `~/DATA/original_data`
+Unzip all files in a single directory: `~/DATA/original_data` like :  
 
-### Preprocess and train-test split the dataset
+original_data/  
+  |  volume-0.nii  
+  |  segmentation-0.nii  
+  |  volume-1.nii  
+  |  segmentation-1.nii  
+  |  ...
+
+### Preprocess the dataset
 
 Go to the project scripts directory:
 
@@ -56,17 +76,10 @@ Go to the project scripts directory:
 cd ~/LiverSeg/scripts
 ```
 
-Run the preprocessing and train-test splitting script:
+Run the preprocessing script :
 
 ```bash
-export DATA_DIR=$HOME/DATA
-export SCRIPTS_DIR=$HOME/LiverSeg/scrips
-export SRC_DATA_DIR=$DATA_DIR/original_data
-export PREPROCESSED_DATA_DIR=$DATA_DIR/preprocessed_data
-export TRAIN_DIR=$DATA_DIR/train_test_data
-
-$PYTHON $SCRIPTS_DIR/preprocess.py -i $SRC_DATA_DIR -t $PREPROCESSED_DATA_DIR -f
-$PYTHON $SCRIPTS_DIR/create_train_test_dir.py -i $PREPROCESSED_DATA_DIR -t $TRAIN_DIR -f
+bash preprocessing.sh
 ```
 
 ## Training
