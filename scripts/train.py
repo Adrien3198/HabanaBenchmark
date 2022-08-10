@@ -63,7 +63,6 @@ args = parser.parse_args()
 
 use_gaudi = args.instance == "dl1"
 
-use_gaudi = False
 with open(
     os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, "bucket_config.json")),
     "r",
