@@ -30,11 +30,11 @@ git clone https://github.com/Adrien3198/HabanaBenchmark.git LiverSeg
 
 To launch a training on Habana dl1.24xlarge EC2 instance, use the **Deep Learning AMI Habana TensorFlow 2.8.0 SynapseAI 1.4.0 (Ubuntu 20.04)**.
 
-Learn more about the Habana setup information with the setup/install guide: https://docs.habana.ai/en/latest/Installation_Guide/index.html
+To learn more about the Habana setup information with the setup/install guide: https://docs.habana.ai/en/latest/Installation_Guide/index.html
 
 For Nvidia GPUs based EC2 instances, use the **Deep Learning AMI GPU TensorFlow 2.8.0 (Ubuntu 20.04)**.
 
-Set PYTHON environment variable to `/usr/bin/python3.8` with adding the following line at the end of the `~/.bashrc` file:  
+Set PYTHON environment variable to `/usr/bin/python3.8` by adding the following line at the end of the `~/.bashrc` file:  
 ```txt
 PYTHON=/usr/bin/python3.8
 ```
@@ -51,7 +51,7 @@ $PYTHON -m pip install -r ~/LiverSeg/env/requirements.txt
 
 For dl1 instances, the habana-horovod custom package to use Horovod with Gaudi cards is already installed.
 
-However, for GPU-based instances (p4d.24xlarge, p3dn.24xlarge), you have to install Horovod for TeansorFlow to run on multiple cards.
+However, for GPU-based instances (p4d.24xlarge, p3dn.24xlarge), you have to install Horovod for TensorFlow to run on multiple cards.
 ```bash
 HOROVOD_WITH_TENSORFLOW=1 $PYTHON -m pip install horovod[tensorflow]
 ```
@@ -101,27 +101,27 @@ horovodrun -np <number_of_workers> $PYTHON ~/LiverSeg/scripts/train.py -i ~/DATA
 
 ```
 
-The instance name dl1 allow computaion on Gaudi. p4d and p3dn allow computation on GPU.
+The instance name dl1 allow computaion on **Gaudi**. p4d and p3dn allow computation on **GPU**.
 
 Example:
 
-- Running on 8 GPUs on p4d instance with batch size 32 and 100 epochs:
+- Running on 8 **GPUs** on p4d instance with batch size 32 and 100 epochs:
 
 ```bash
 horovodrun -np 8 $PYTHON ~/LiverSeg/scripts/train.py -i ~/DATA/training_data -instance p4d -bs 32 -e 100 -l tensorboard_logs
 ```
 
-- Running on 8 Gaudi cards on dl1 with batch size 32 and 100 epochs:
+- Running on 8 **Gaudi** cards on dl1 with batch size 32 and 100 epochs:
 
 ```bash
 horovodrun -np 8 $PYTHON ~/LiverSeg/scripts/train.py -i ~/DATA/training_data -instance dl1 -bs 32 -e 100 -l tensorboard_logs
 ```
 
-To enable mixed_precision, add the `--mixed_precision` flag in the command for Gaudi and GPUs
+To enable mixed_precision, add the `--mixed_precision` flag in the command for **Gaudi** and **GPUs**
 
 Example:
 
-- Running on 8 Gaudi cards with batch size 32 and 100 epochs and bfloat16:
+- Running on 8 **Gaudi** cards with batch size 32 and 100 epochs and bfloat16:
 
 ```bash
 horovodrun -np 8 $PYTHON ~/LiverSeg/scripts/train.py -i ~/DATA/training_data -instance dl1 -bs 32 -e 100 -l tensorboard_logs --mixed_precision
