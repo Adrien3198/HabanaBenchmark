@@ -1,9 +1,6 @@
-tensorflow==2.8
 numpy
 pandas
-matplotlib
 SimpleITK
 boto3
 tqdm
-horovod[tensorflow]
 protobuf==3.20

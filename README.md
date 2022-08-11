@@ -43,10 +43,17 @@ And then run :
 source ~/.bashrc
 ```
 
-Then, install required package with the setup script :
+For all instance types, you can install required packages described in `LiverSeg/env/requirements.txt` file with pip :
 
 ```bash
-bash LiverSeg/env/install.sh
+$PYTHON -m pip install -r ~/LiverSeg/env/requirements.txt
+```
+
+For dl1 instances, the habana-horovod custom package to use Horovod with Gaudi cards is already installed.
+
+However, for GPU-based instances (p4d.24xlarge, p3dn.24xlarge), you have to install Horovod for TeansorFlow to run on multiple cards.
+```bash
+HOROVOD_WITH_TENSORFLOW=1 $PYTHON -m pip install -r horovod[tensorflow]
 ```
 
 ### Download the dataset
