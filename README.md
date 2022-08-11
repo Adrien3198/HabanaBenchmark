@@ -53,7 +53,7 @@ For dl1 instances, the habana-horovod custom package to use Horovod with Gaudi c
 
 However, for GPU-based instances (p4d.24xlarge, p3dn.24xlarge), you have to install Horovod for TeansorFlow to run on multiple cards.
 ```bash
-HOROVOD_WITH_TENSORFLOW=1 $PYTHON -m pip install -r horovod[tensorflow]
+HOROVOD_WITH_TENSORFLOW=1 $PYTHON -m pip install horovod[tensorflow]
 ```
 
 ### Download the dataset
