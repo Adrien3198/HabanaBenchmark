@@ -10,13 +10,11 @@ This repository provides a script for training a 2D U-Net of liver segmentation 
 It is designed to run on the dl1.24xlarge, p3dn.24xlarge and p4d.24xlarge EC2 instances on AWS.
 Monitoring metrics are logged to evaluate the performance of Gaudi cards and Nvidia GPUs.
 
-You can find more information and resources at [Habana for developers website](https://developer.habana.ai/)
-
 
 ## Setup
 
----
-
+To help developers find more information to get started with Habana AI processors, we suggest that you check the Habana developer site https://developer.habana.ai/
+___
 ### Clone the project repository
 
 ```bash
@@ -32,7 +30,7 @@ git clone https://github.com/Adrien3198/HabanaBenchmark.git LiverSeg
 
 To launch a training on Habana dl1.24xlarge EC2 instance, use the **Deep Learning AMI Habana TensorFlow 2.8.0 SynapseAI 1.4.0 (Ubuntu 20.04)**.
 
-(more information at [Habana installation guide](https://docs.habana.ai/en/latest/Installation_Guide/index.html))
+Learn more about the Habana setup information with the setup/install guide: https://docs.habana.ai/en/latest/Installation_Guide/index.html
 
 For Nvidia GPUs based EC2 instances, use the **Deep Learning AMI GPU TensorFlow 2.8.0 (Ubuntu 20.04)**.
 
@@ -44,7 +42,6 @@ And then run :
 ```bash
 source ~/.bashrc
 ```
- 
 
 Then, install required package with the setup script :
 
@@ -76,22 +73,28 @@ Go to the project scripts directory:
 cd ~/LiverSeg/scripts
 ```
 
-Run the preprocessing script :
+Run these commands :
 
 ```bash
-bash preprocessing.sh
+$PYTHON preprocess.py -i ~/DATA/original_data -t ~/DATA/preprocessed_data -f
+```
+```bash
+$PYTHON create_train_test_dir.py -i ~/DATA/preprocessed_data -t ~/DATA/trainin
+g_data -f
 ```
 
 ## Training
 
 ---
 
-To launch a training task on GPUs, run the command:
+To launch a training task, run the command:
 
 ```bash
 horovodrun -np <number_of_workers> $PYTHON ~/LiverSeg/scripts/train.py -i ~/DATA/training_data -instance <instance_type {dl1n, p4d, p3dn}> -bs <batch_size> -e <number_of_epochs> -l <tensorboard_log_dir>
 
 ```
+
+The instance name dl1 allow computaion on Gaudi. p4d and p3dn allow computation on GPU.
 
 Example:
 
