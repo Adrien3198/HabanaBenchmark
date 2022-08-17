@@ -18,9 +18,10 @@ class DataAugmenter:
         VERTICAL = 1
         HORIZONTAL = 2
 
-    def __init__(self, flip_type: FlipType, rotation_number: int) -> None:
-        self.flip_type = flip_type
-        self.rotation_number = rotation_number
+    def __init__(self, axes=(0, 1)) -> None:
+        self.axes = axes
+        self.flip_type = random.choice(list(DataAugmenter.FlipType))
+        self.rotation_number = random.choice(range(4))
 
     def flip(self, x: ndarray) -> ndarray:
         """Flips a 2D array"""
@@ -28,7 +29,7 @@ class DataAugmenter:
 
     def rotate(self, x: ndarray) -> ndarray:
         """Rotate a 2D array"""
-        return rot90(x, self.rotation_number)
+        return rot90(x, self.rotation_number, axes=self.axes)
 
     def transform(self, x: ndarray) -> ndarray:
         """Performs all transformations on a 2D array"""

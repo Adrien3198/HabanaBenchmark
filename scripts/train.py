@@ -89,7 +89,7 @@ except Exception:
 
 import tensorflow as tf
 from livseg.data_management.dataset_handler import DatasetHandler
-from livseg.data_management.generator import DataGenerator, DatasetPartitioner
+from livseg.data_management.generator import DataAugmenter, DatasetPartitioner
 from livseg.data_management.loader import X_COL, Y_COL
 from livseg.data_management.s3utils import S3UpLoader
 from livseg.model.callbacks import BenchmarkClbck
@@ -166,6 +166,8 @@ test_ds = tf.data.Dataset.from_tensor_slices(
     (df_test[X_COL].tolist(), df_test[Y_COL].tolist())
 )
 
+AUTOTUNE = tf.data.AUTOTUNE
+
 
 def map_func(feature_path, label_path):
     feature = np.load(feature_path)
@@ -173,37 +175,54 @@ def map_func(feature_path, label_path):
     return feature, label
 
 
-AUTOTUNE = tf.data.AUTOTUNE
-
-train_ds = train_ds.map(
-    lambda item1, item2: tf.numpy_function(
-        map_func, [item1, item2], [tf.float32, tf.uint16]
-    ),
-    num_parallel_calls=AUTOTUNE,
+data_reader_fn = lambda item1, item2: tf.numpy_function(
+    map_func, [item1, item2], [tf.float32, tf.uint16]
 )
 
-test_ds = test_ds.map(
-    lambda item1, item2: tf.numpy_function(
-        map_func, [item1, item2], [tf.float32, tf.uint16]
-    ),
-    num_parallel_calls=AUTOTUNE,
+map_kwargs = dict(
+    map_func=data_reader_fn,
+    num_parallel_calls=AUTOTUNE
 )
 
+train_ds = train_ds.map(**map_kwargs)
+test_ds = test_ds.map(**map_kwargs)
+
+
+def prefetch(dataset):
+    """Dataset prefetching function"""
+    if use_gaudi:
+        device = tf.config.list_logical_devices("HPU")[0].name
+        with tf.device(device):
+            dataset = dataset.apply(
+                tf.data.experimental.prefetch_to_device(device)
+            )
+    else:
+        dataset = dataset.prefetch(AUTOTUNE)
+
+    return dataset
+
+
+def data_augmentation(x, y):
+    data_augmenter = DataAugmenter()
+    return (data_augmenter.transform(x), data_augmenter.transform(y))
 
 def configure_for_performance(ds):
     ds = ds.cache()
     ds = ds.shuffle(buffer_size=1000)
+    ds = ds.map(
+        lambda x, y: tf.numpy_function(
+            data_augmentation, [x, y], [tf.float32, tf.uint16]
+        ),
+        num_parallel_calls=AUTOTUNE,
+    )
     ds = ds.batch(batch_size)
-    ds = ds.prefetch(buffer_size=AUTOTUNE)
+    #ds = prefetch(ds)
     return ds
 
 
 train_ds = configure_for_performance(train_ds)
 test_ds = configure_for_performance(test_ds)
-"""
-train_ds = DataGenerator(df_train, batch_size=batch_size, use_augmentation=True)
-test_ds = DataGenerator(df_test, batch_size=batch_size)
-"""
+
 
 model = unet2D(input_shape=(512, 512, 1))
 
@@ -225,8 +244,9 @@ model.compile(
 tensorboard_callback = TensorBoard(
     log_dir=os.path.join(log_dir, session, str(hvd_rank)),
     update_freq="epoch",
-    profile_batch=(100, 200),
+    profile_batch=(400, 500),
 )
+
 callbacks = [
     tensorboard_callback,
     BenchmarkClbck(batch_size, hvd_size, tensorboard_callback.log_dir, logs_step=20),
@@ -258,6 +278,8 @@ history = model.fit(
 
 end_time = datetime.now() - now
 logging.info(f"GLOBAL TRAINING TIME:{end_time.total_seconds()} seconds")
+
+exit(0)
 
 if hvd_rank == 0:
 
