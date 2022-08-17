@@ -216,7 +216,7 @@ def configure_for_performance(ds):
         num_parallel_calls=AUTOTUNE,
     )
     ds = ds.batch(batch_size)
-    #ds = prefetch(ds)
+    ds = prefetch(ds)
     return ds
 
 
