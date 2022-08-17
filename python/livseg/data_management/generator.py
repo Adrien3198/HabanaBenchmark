@@ -139,7 +139,7 @@ class DatasetPartitioner:
     """Divide a dataset to be didtributed to multiple workers"""
 
     def __init__(self, df: DataFrame, num_workers: int) -> None:
-        self.df = df.sample(frac=1)
+        self.df = df.copy()
         self.num_workers = num_workers
         partition_size = len(df) // num_workers
         self.__splitted_indexes = [

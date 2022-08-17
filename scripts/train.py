@@ -167,22 +167,20 @@ test_ds = tf.data.Dataset.from_tensor_slices(
 )
 
 AUTOTUNE = tf.data.AUTOTUNE
+DTYPES = [tf.float32, tf.uint8]
 
 
 def map_func(feature_path, label_path):
     feature = np.load(feature_path)
-    label = np.load(label_path)
+    label = np.load(label_path).astype(np.uint8)
     return feature, label
 
 
 data_reader_fn = lambda item1, item2: tf.numpy_function(
-    map_func, [item1, item2], [tf.float32, tf.uint16]
+    map_func, [item1, item2], DTYPES
 )
 
-map_kwargs = dict(
-    map_func=data_reader_fn,
-    num_parallel_calls=AUTOTUNE
-)
+map_kwargs = dict(map_func=data_reader_fn, num_parallel_calls=AUTOTUNE)
 
 train_ds = train_ds.map(**map_kwargs)
 test_ds = test_ds.map(**map_kwargs)
@@ -193,9 +191,7 @@ def prefetch(dataset):
     if use_gaudi:
         device = tf.config.list_logical_devices("HPU")[0].name
         with tf.device(device):
-            dataset = dataset.apply(
-                tf.data.experimental.prefetch_to_device(device)
-            )
+            dataset = dataset.apply(tf.data.experimental.prefetch_to_device(device))
     else:
         dataset = dataset.prefetch(AUTOTUNE)
 
@@ -206,13 +202,12 @@ def data_augmentation(x, y):
     data_augmenter = DataAugmenter()
     return (data_augmenter.transform(x), data_augmenter.transform(y))
 
+
 def configure_for_performance(ds):
     ds = ds.cache()
     ds = ds.shuffle(buffer_size=1000)
     ds = ds.map(
-        lambda x, y: tf.numpy_function(
-            data_augmentation, [x, y], [tf.float32, tf.uint16]
-        ),
+        lambda x, y: tf.numpy_function(data_augmentation, [x, y], DTYPES),
         num_parallel_calls=AUTOTUNE,
     )
     ds = ds.batch(batch_size)
@@ -278,8 +273,6 @@ history = model.fit(
 
 end_time = datetime.now() - now
 logging.info(f"GLOBAL TRAINING TIME:{end_time.total_seconds()} seconds")
-
-exit(0)
 
 if hvd_rank == 0:
 

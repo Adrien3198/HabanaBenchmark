@@ -107,7 +107,7 @@ def read_ct(path: Union[str, os.PathLike]) -> sitk.Image:
 
 def read_segmentation(path: Union[str, os.PathLike]) -> sitk.Image:
     """Reads a CT volume in unint16"""
-    return sitk.ReadImage(path, sitk.sitkUInt16)
+    return sitk.ReadImage(path, sitk.sitkUInt8)
 
 
 def read_ct_array(path: Union[str, os.PathLike]) -> np.ndarray:
