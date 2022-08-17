@@ -36,7 +36,7 @@ For Nvidia GPUs based EC2 instances, use the **Deep Learning AMI GPU TensorFlow 
 
 Set PYTHON environment variable to `/usr/bin/python3.8` by adding the following line at the end of the `~/.bashrc` file:  
 ```txt
-PYTHON=/usr/bin/python3.8
+export PYTHON=/usr/bin/python3.8
 ```
 And then run :  
 ```bash
