@@ -5,6 +5,7 @@ import json
 import os
 import sys
 from datetime import datetime
+from random import seed
 
 now = datetime.now()
 
@@ -125,9 +126,7 @@ log_dir = args.logdir
 hvd_size = hvd.size() if horovod else 1
 hvd_rank = hvd.rank() if horovod else 0
 
-session = (
-    f"session_{batch_size}_{'mixed_precision' if args.mixed_precision else 'float32'}"
-)
+session = f"session_{batch_size}_{'mixed_precision' if args.mixed_precision else 'float32'}_old"
 
 
 try:
@@ -153,11 +152,9 @@ full_df_train, full_df_test = directory_handler.get_train_test_split_from_ids()
 train_splitter = DatasetPartitioner(full_df_train, hvd_size)
 test_splitter = DatasetPartitioner(full_df_test, hvd_size)
 
-del full_df_train
-del full_df_test
-
 df_train = train_splitter.get_partition(hvd_rank)
 df_test = test_splitter.get_partition(hvd_rank)
+
 
 train_ds = tf.data.Dataset.from_tensor_slices(
     (df_train[X_COL].tolist(), df_train[Y_COL].tolist())
@@ -188,13 +185,13 @@ test_ds = test_ds.map(**map_kwargs)
 
 def prefetch(dataset):
     """Dataset prefetching function"""
+    dataset = dataset.prefetch(buffer_size=AUTOTUNE)
     if use_gaudi:
-        device = tf.config.list_logical_devices("HPU")[0].name
-        with tf.device(device):
-            dataset = dataset.apply(tf.data.experimental.prefetch_to_device(device))
-    else:
-        dataset = dataset.prefetch(AUTOTUNE)
-
+        dataset.apply(
+            tf.data.experimental.prefetch_to_device(
+                device="/device:HPU:0", buffer_size=batch_size * hvd.size()
+            )
+        )
     return dataset
 
 
@@ -203,21 +200,23 @@ def data_augmentation(x, y):
     return (data_augmenter.transform(x), data_augmenter.transform(y))
 
 
-def configure_for_performance(ds):
+def configure_for_performance(ds: tf.data.Dataset):
     ds = ds.cache()
-    ds = ds.shuffle(buffer_size=1000)
-    ds = ds.map(
-        lambda x, y: tf.numpy_function(data_augmentation, [x, y], DTYPES),
-        num_parallel_calls=AUTOTUNE,
+    ds = ds.shuffle(buffer_size=10000)
+    ds = ds.apply(
+        tf.data.experimental.map_and_batch(
+            map_func=data_augmentation,
+            num_parallel_calls=AUTOTUNE,
+            batch_size=batch_size,
+            drop_remainder=True,
+        )
     )
-    ds = ds.batch(batch_size)
     ds = prefetch(ds)
     return ds
 
 
 train_ds = configure_for_performance(train_ds)
 test_ds = configure_for_performance(test_ds)
-
 
 model = unet2D(input_shape=(512, 512, 1))
 
@@ -239,7 +238,7 @@ model.compile(
 tensorboard_callback = TensorBoard(
     log_dir=os.path.join(log_dir, session, str(hvd_rank)),
     update_freq="epoch",
-    profile_batch=(400, 500),
+    profile_batch=(500, 1000),
 )
 
 callbacks = [
@@ -273,7 +272,7 @@ history = model.fit(
 
 end_time = datetime.now() - now
 logging.info(f"GLOBAL TRAINING TIME:{end_time.total_seconds()} seconds")
-
+exit(0)
 if hvd_rank == 0:
 
     weights_dir = "./weights"
