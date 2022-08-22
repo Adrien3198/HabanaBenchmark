@@ -1,13 +1,7 @@
 """Contains data generator for keras and a dataset splitter"""
 
-import enum
-from os import PathLike
-from typing import List, Tuple, Union
-
-from livseg.data_management.loader import X_COL, Y_COL
-from numpy import arange, fliplr, flipud, load, ndarray, random, rot90, stack
+from numpy import ndarray
 from pandas import DataFrame
-from tensorflow.keras.utils import Sequence
 import tensorflow as tf
 
 
@@ -43,20 +37,3 @@ class DataAugmenter:
     def transform(self, x: ndarray) -> ndarray:
         """Performs all transformations on a 2D array"""
         return self.flip(self.rotate(x))
-
-
-class DatasetPartitioner:
-    """Divide a dataset to be didtributed to multiple workers"""
-
-    def __init__(self, df: DataFrame, num_workers: int) -> None:
-        self.df = df.copy()
-        self.num_workers = num_workers
-        partition_size = len(df) // num_workers
-        self.__splitted_indexes = [
-            df.index[i * partition_size : (i + 1) * partition_size]
-            for i in range(num_workers)
-        ]
-
-    def get_partition(self, partition_num: int) -> DataFrame:
-        """Returns a partition of a Dataframe of paths"""
-        return self.df.loc[self.__splitted_indexes[partition_num]]

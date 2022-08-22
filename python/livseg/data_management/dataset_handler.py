@@ -310,3 +310,20 @@ class DatasetHandler:
         """Generates and saves 2D slices of multiple subjects volumes"""
         for path in tqdm(paths):
             DatasetHandler.__single_volume_to_npys(directory, path)
+
+
+class DatasetPartitioner:
+    """Divide a dataset to be didtributed to multiple workers"""
+
+    def __init__(self, df: DataFrame, num_workers: int) -> None:
+        self.df = df.copy()
+        self.num_workers = num_workers
+        partition_size = len(df) // num_workers
+        self.__splitted_indexes = [
+            df.index[i * partition_size : (i + 1) * partition_size]
+            for i in range(num_workers)
+        ]
+
+    def get_partition(self, partition_num: int) -> DataFrame:
+        """Returns a partition of a Dataframe of paths"""
+        return self.df.loc[self.__splitted_indexes[partition_num]]

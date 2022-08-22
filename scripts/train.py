@@ -89,8 +89,8 @@ except Exception:
     horovod = False
 
 import tensorflow as tf
-from livseg.data_management.dataset_handler import DatasetHandler
-from livseg.data_management.generator import DataAugmenter, DatasetPartitioner
+from livseg.data_management.data_augmenter import DataAugmenter
+from livseg.data_management.dataset_handler import DatasetHandler, DatasetPartitioner
 from livseg.data_management.loader import X_COL, Y_COL
 from livseg.data_management.s3utils import S3UpLoader
 from livseg.model.callbacks import BenchmarkClbck
@@ -272,7 +272,7 @@ history = model.fit(
 
 end_time = datetime.now() - now
 logging.info(f"GLOBAL TRAINING TIME:{end_time.total_seconds()} seconds")
-exit(0)
+
 if hvd_rank == 0:
 
     weights_dir = "./weights"
