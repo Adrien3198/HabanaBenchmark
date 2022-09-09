@@ -126,7 +126,9 @@ log_dir = args.logdir
 hvd_size = hvd.size() if horovod else 1
 hvd_rank = hvd.rank() if horovod else 0
 
-session = f"session_{batch_size}_{'mixed_precision' if args.mixed_precision else 'float32'}_old"
+session = (
+    f"session_{batch_size}_{'mixed_precision' if args.mixed_precision else 'float32'}"
+)
 
 
 try:
@@ -238,12 +240,11 @@ model.compile(
 tensorboard_callback = TensorBoard(
     log_dir=os.path.join(log_dir, session, str(hvd_rank)),
     update_freq="epoch",
-    profile_batch=(500, 1000),
 )
 
 callbacks = [
     tensorboard_callback,
-    BenchmarkClbck(batch_size, hvd_size, tensorboard_callback.log_dir, logs_step=20),
+    BenchmarkClbck(batch_size, hvd_size),
 ]
 
 if horovod:
@@ -254,20 +255,13 @@ if horovod:
         ]
     )
 
-if hvd_rank == 0:
-    callbacks.append(
-        tf.keras.callbacks.ModelCheckpoint(
-            os.path.join("checkpoints", session, "checkpoint-{epoch}.h5")
-        )
-    )
-
 history = model.fit(
     train_ds,
-    validation_data=test_ds,
+    # validation_data=test_ds,
     epochs=epochs,
     callbacks=callbacks,
     verbose=int(hvd_rank == 0),
-    validation_freq=2,
+    # validation_freq=2,
 )
 
 end_time = datetime.now() - now
