@@ -165,6 +165,9 @@ test_ds = tf.data.Dataset.from_tensor_slices(
     (df_test[X_COL].tolist(), df_test[Y_COL].tolist())
 )
 
+train_dataset_size = len(train_ds)
+test_dataset_size = len(test_ds)
+
 AUTOTUNE = tf.data.AUTOTUNE
 DTYPES = [tf.float32, tf.uint8]
 
@@ -259,6 +262,7 @@ if horovod:
 history = model.fit(
     train_ds,
     # validation_data=test_ds,
+    steps_per_epoch=triain_dataset_size/batch_size,
     epochs=epochs,
     callbacks=callbacks,
     verbose=int(hvd_rank == 0),
