@@ -207,7 +207,7 @@ def data_augmentation(x, y):
 
 def configure_for_performance(ds: tf.data.Dataset):
     ds = ds.cache()
-    ds = ds.shuffle(buffer_size=10000)
+    ds = ds.shuffle(buffer_size=train_dataset_size)
     ds = ds.repeat()
     ds = ds.apply(
         tf.data.experimental.map_and_batch(
