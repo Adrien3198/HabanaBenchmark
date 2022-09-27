@@ -38,5 +38,5 @@ class BenchmarkClbck(Callback):
     def on_train_end(self, logs=None):
         logging.info(
             "Average (on epochs) global samples/sec: %.2f",
-            mean(self.global_samples_per_second),
+            mean(self.global_samples_per_second[1:]),  # skip first epoch
         )

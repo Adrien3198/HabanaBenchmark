@@ -262,7 +262,7 @@ if horovod:
 history = model.fit(
     train_ds,
     # validation_data=test_ds,
-    steps_per_epoch=triain_dataset_size/batch_size,
+    steps_per_epoch=train_dataset_size / batch_size,
     epochs=epochs,
     callbacks=callbacks,
     verbose=int(hvd_rank == 0),
